@@ -1,264 +1,87 @@
+import math
 import lmstudio as lms
-
-import os
-import shutil
-import subprocess
-import json
 import colorama
 from colorama import Fore, Style
-import torch
-from PIL import Image
-from transformers import AutoProcessor, AutoModelForCausalLM
-import warnings
-import io
-from contextlib import redirect_stdout
+import json
+import re
 
 # Initialize colorama
 colorama.init()
 
-# Folder configuration
-source_folder = "source"
-holidays_folder = "holidays"
-vehicles_folder = "vehicles"
-animals_folder = "animals"
-other_folder = "other"
+def addition(a: int, b: int) -> int:
+    """Given two integer values a and b as input parameters, this function computes and returns their arithmetic sum (a + b) as an integer value."""
+    return a + b
 
-# Create folders if they don't exist
-for folder in [source_folder, holidays_folder, vehicles_folder, other_folder, animals_folder]:
-    if not os.path.exists(folder):
-        os.makedirs(folder)
+def substraction(a: int, b: int) -> int:
+    """Given two integer values a and b as input parameters, this function computes and returns their arithmetic difference (a - b) as an integer value."""
+    if a < b:
+        raise ValueError("substraction result is negative")
+    return a - b
 
-def list_images_to_process() -> str:
-    """Lists the name of the next image to process"""
-    try:
-        images = [f for f in os.listdir(source_folder) if os.path.isfile(os.path.join(source_folder, f)) and f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif'))]
-        
-        if images:
-            first_image = images[0]
-            print(f"{Fore.GREEN}First image found in '{source_folder}': {first_image}{Style.RESET_ALL}")
-            return first_image
-        else:
-            print(f"{Fore.YELLOW}No images found in '{source_folder}'.{Style.RESET_ALL}")
-            return "There are no more images to process"
-    except FileNotFoundError:
-        print(f"{Fore.RED}Error: Folder '{source_folder}' not found.{Style.RESET_ALL}")
-        return ""
-    except Exception as e:
-        print(f"{Fore.RED}An error occurred while listing images: {e}{Style.RESET_ALL}")
-        return ""
+def multiplication(a: int, b: int) -> int:
+    """Given two integer values a and b as input parameters, this function computes and returns their arithmetic product (a * b) as an integer value."""
+    return a * b
 
-def move_image_to_holidays(image_name: str) -> str:
-    """Sorts and moves an image to the 'holidays' folder."""
-    try:
-        source_path = os.path.join(source_folder, image_name)
-        destination_path = os.path.join(holidays_folder, image_name)
-        shutil.move(source_path, destination_path)
-        print(f"{Fore.GREEN}Image '{image_name}' moved to '{holidays_folder}'.{Style.RESET_ALL}")
-        return "retrieve the next image to sort"
-    except FileNotFoundError:
-        print(f"{Fore.RED}Error: File '{image_name}' not found in '{source_folder}'.{Style.RESET_ALL}")
-        return "File not found"
-    except Exception as e:
-        print(f"{Fore.RED}An error occurred while moving the image: {e}{Style.RESET_ALL}")
-        return "operation error"
-    
-def move_image_to_animals(image_name: str) -> str:
-    """Sorts and moves an image to the 'animals' folder."""
-    try:
-        source_path = os.path.join(source_folder, image_name)
-        destination_path = os.path.join(animals_folder, image_name)
-        shutil.move(source_path, destination_path)
-        print(f"{Fore.GREEN}Image '{image_name}' moved to '{animals_folder}'.{Style.RESET_ALL}")        
-        return "retrieve the next image to sort"
-    except FileNotFoundError:
-        print(f"{Fore.RED}Error: File '{image_name}' not found in '{source_folder}'.{Style.RESET_ALL}")
-        return "File not found"
-    except Exception as e:
-        print(f"{Fore.RED}An error occurred while moving the image: {e}{Style.RESET_ALL}")
-        return "operation error"
-
-def move_image_to_vehicles(image_name: str) -> str:
-    """Sorts and moves an image to the 'vehicles' folder."""
-    try:
-        source_path = os.path.join(source_folder, image_name)
-        destination_path = os.path.join(vehicles_folder, image_name)
-        shutil.move(source_path, destination_path)
-        print(f"{Fore.GREEN}Image '{image_name}' moved to '{vehicles_folder}'.{Style.RESET_ALL}")
-        return "retrieve the next image to sort"
-    except FileNotFoundError:
-        print(f"{Fore.RED}Error: File '{image_name}' not found in '{source_folder}'.{Style.RESET_ALL}")
-        return "File not found"
-    except Exception as e:
-        print(f"{Fore.RED}An error occurred while moving the image: {e}{Style.RESET_ALL}")
-        return "operation error"
-
-def move_image_to_other(image_name: str) -> str:
-    """Sorts and moves an image to the 'other' folder."""
-    try:
-        source_path = os.path.join(source_folder, image_name)
-        destination_path = os.path.join(other_folder, image_name)
-        shutil.move(source_path, destination_path)
-        print(f"{Fore.GREEN}Image '{image_name}' moved to '{other_folder}'.{Style.RESET_ALL}")
-        return "retrieve the next image to sort"
-    except FileNotFoundError:
-        print(f"{Fore.RED}Error: File '{image_name}' not found in '{source_folder}'.{Style.RESET_ALL}")
-        return "File not found"
-    except Exception as e:
-        print(f"{Fore.RED}An error occurred while moving the image: {e}{Style.RESET_ALL}")
-        return "operation error"
-
-def get_image_description(image_name: str) -> str:
-    """
-    Provides a description of the specified image
-    """
-    try:
-        source_path = os.path.join(source_folder, image_name)
-        image_handle = lms.prepare_image(source_path)
-        chat = lms.Chat()
-        chat.add_user_message("describe the image in 3 sentences", images=[image_handle])
-        prediction = image_model.respond(chat)
-
-        
-        if not isinstance(prediction, str):
-            prediction = str(prediction)
-        return prediction
-        
-    except FileNotFoundError:
-        print(f"{Fore.RED}Error: File '{image_name}' not found in '{source_folder}'.{Style.RESET_ALL}")
-        return "File not found"
-    except Exception as e:
-        print(f"{Fore.RED}An error occurred while describing the image: {e}{Style.RESET_ALL}")
-        return "retry with another image"
-       
+def division(a: int, b: int) -> int:
+    """Given two integer values a and b as input parameters, this function computes and returns their arithmetic quotient (a / b) as an integer value. If b equals zero, a ValueError exception is raised to prevent division by zero. If the division does not result in an integer value, a ValueError exception is raised."""
+    if b == 0:
+        raise ValueError("Cannot divide by zero")
+    if a % b != 0:
+        raise ValueError("Division must result in an integer")
+    return a // b
 
 def format_message(message):
+    """Format the message in a more readable way"""
     try:
-        msg_str = str(message)
-        
-        # Function to decode Unicode escape sequences
-        def decode_unicode(text):
-            try:
-                return bytes(text, 'utf-8').decode('unicode_escape')
-            except:
-                return text
-        
-        # Handle assistant messages
-        if hasattr(message, 'role') and message.role == 'assistant':
-            print(f"{Fore.CYAN}Assistant:{Style.RESET_ALL}")
+        # Simple string representation for any message type
+        if hasattr(message, 'role'):
+            role = message.role
+            if role == 'assistant':
+                print(f"{Fore.CYAN}Assistant thinking:{Style.RESET_ALL}")
+                # Try to get text content
+                if hasattr(message, 'content') and len(message.content) > 0:
+                    for item in message.content:
+                        if hasattr(item, 'text') and item.text:
+                            print(f"{item.text}\n")
             
-            # Extract and display all text and tool names
-            if hasattr(message, 'content') and isinstance(message.content, list):
-                for item in message.content:
-                    item_str = str(item)
-                    
-                    # Extract text content from text parts
-                    if "ChatMessagePartTextData" in item_str:
-                        if '"text":' in item_str:
-                            text_start = item_str.find('"text": "') + 9
-                            if text_start > 8:
-                                # Handle escaped quotes in the text
-                                text_content = ""
-                                in_quotes = True
-                                i = text_start
-                                while i < len(item_str) and in_quotes:
-                                    if item_str[i:i+2] == '\\"':
-                                        text_content += '"'
-                                        i += 2
-                                    elif item_str[i] == '"' and (i == 0 or item_str[i-1] != '\\'):
-                                        in_quotes = False
-                                    else:
-                                        text_content += item_str[i]
-                                        i += 1
-                                
-                                # Clean up the text and decode Unicode
-                                text_content = text_content.replace('\\n', '\n')
-                                text_content = decode_unicode(text_content)
-                                if text_content.strip():  # Only print non-empty texts
-                                    print(f"{text_content}")
-                    
-                    # Extract tool names from tool call requests
-                    elif "ChatMessagePartToolCallRequestData" in item_str:
-                        if '"name":' in item_str:
-                            name_start = item_str.find('"name": "') + 9
-                            name_end = item_str.find('"', name_start)
-                            if name_start > 8 and name_end > name_start:
-                                tool_name = item_str[name_start:name_end]
-                                tool_name = decode_unicode(tool_name)
-                                print(f"{Fore.BLUE}Calling tool: {tool_name}{Style.RESET_ALL}")
-        
-        # Handle tool messages
-        elif hasattr(message, 'role') and message.role == 'tool':
-            print(f"{Fore.YELLOW}Tool result:{Style.RESET_ALL}")
-            
-            # Extract and display all content values
-            if hasattr(message, 'content') and isinstance(message.content, list):
-                for item in message.content:
-                    item_str = str(item)
-                    
-                    if "ChatMessagePartToolCallResultData" in item_str:
-                        if '"content":' in item_str:
-                            content_start = item_str.find('"content": "') + 12
-                            if content_start > 11:
-                                # Extract content with proper handling of quotes
-                                content_value = ""
-                                in_quotes = True
-                                i = content_start
-                                while i < len(item_str) and in_quotes:
-                                    if item_str[i:i+2] == '\\"':
-                                        content_value += '"'
-                                        i += 2
-                                    elif item_str[i] == '"' and (i == 0 or item_str[i-1] != '\\'):
-                                        in_quotes = False
-                                    else:
-                                        content_value += item_str[i]
-                                        i += 1
-                                
-                                # Clean up the content and decode Unicode
-                                content_value = content_value.replace('\\n', '\n')
-                                content_value = decode_unicode(content_value)
-                                content_value = content_value.strip('\"')
-                                print(f"{content_value}")
-        
-        # Handle string messages
-        elif isinstance(message, str):
-            print(decode_unicode(message))
-            
-    except Exception as e:
-        print(f"{Fore.RED}Error in format_message: {str(e)}{Style.RESET_ALL}")
-        import traceback
-        traceback.print_exc()
+            elif role == 'tool':
+                print(f"{Fore.YELLOW}Tool result:{Style.RESET_ALL}")
+                if hasattr(message, 'content') and len(message.content) > 0:
+                    print(message.content[0].content)
+        else:
+            # Print any other message types in a simplified way
+            print(f"{Fore.WHITE}Message: {message}{Style.RESET_ALL}")
     
+    except Exception as e:
+        print(f"{Fore.RED}Error formatting message: {str(e)}{Style.RESET_ALL}")
+        print(f"{Fore.WHITE}Raw message: {str(message)[:100]}...{Style.RESET_ALL}")
+    
+    # Return None to prevent default printing
     return None
 
+print(f"\n{Fore.MAGENTA}=== NUMBERS GAME CHALLENGE ==={Style.RESET_ALL}")
+print(f"{Fore.BLUE}Target: 254, Using numbers: 25, 100, 1, 7, 5, 2, 8{Style.RESET_ALL}\n")
 
-# Definition of the agent
+# Create model and set up functions
+model = lms.llm()
 
-model = lms.llm("gemma-3-4b-it")
-client = lms.get_default_client()
-image_model = client.llm.load_new_instance("gemma-3-4b-it")
-
-prompt = """organize images into folders based on their categories (holidays, vehicles, animals, other)
-do not invent names for images, use the existing ones provided by the tool list_images_to_process
-before calling a tool, explain your thinking.
-at the end of the process, give an evaluation about each tools used."""
-tools = [
-    list_images_to_process,
-    move_image_to_holidays,
-    move_image_to_vehicles,
-    move_image_to_other,
-    move_image_to_animals,
-    get_image_description
-]
-try:    
+try:
+    # Use a more specific prompt that works better with the current model
+    prompt = """
+    The Numbers Game: I need to get exactly 254 using these numbers: 25, 100, 1, 7, 5, 2, and 8.
+    I can use addition, substraction, multiplication, and division.
+    Each number can only be used once, but I don't have to use all numbers.
+    Think step by step and use tools to verify calculations.
+    """
+    
     result = model.act(
         prompt,
-        tools,
+        [addition, substraction, multiplication, division],
         on_message=format_message
     )
-    print(f"\n{Fore.GREEN}Final result: {result}{Style.RESET_ALL}")
-    model.unload()
-    image_model.unload()
     
+    print(f"\n{Fore.GREEN}Final result: {result}{Style.RESET_ALL}")
+
 except Exception as e:
     print(f"\n{Fore.RED}An error occurred: {str(e)}{Style.RESET_ALL}")
     print(f"{Fore.YELLOW}Try using a different model or updating the LMStudio SDK.{Style.RESET_ALL}")
