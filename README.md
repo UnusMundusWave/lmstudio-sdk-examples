@@ -5,22 +5,21 @@ This repository contains four Python examples demonstrating the use of the LM St
 -   **`act.py`**: Using tools to solve a number game.
 -   **`ChatWeb.py`**: Creating a web-aware chatbot that can analyze and discuss webpage content.
 -   **`3Agents.py`**: Simulating a debate between three agents with different viewpoints, moderated by a supervisor.
--   **`sorting_agent.py`**: Using vision capabilities to sort images into categories based on their content.
+-   **`sorting_agent.py`**: Sorting images into different folders based on their content.
 
 ## Prerequisites
 
 Before running these examples, ensure you have the following:
 
-*   **LM Studio:** Installed and running.
+*   **LM Studio:** Installed and running. 
 *   **Python 3.6+:** Python version 3.6 or higher.
-*   **LM Studio SDK:** Install the SDK with `pip install lmstudio`.
+*   **LM Studio SDK:** Install the SDK with `pip install lmstudio`. 1.1.0 with image support 
 *   **Colorama:** Install with `pip install colorama`.
 *   **Requests:** Install with `pip install requests`.
 *   **BeautifulSoup4:** Install with `pip install beautifulsoup4`.
-*   **Numpy:** Install with `pip install numpy`.
-*   **PyTorch:** Install with `pip install torch`.
-*   **Transformers:** Install with `pip install transformers`.
 *   **PIL:** Install with `pip install pillow`.
+*   **Vision-capable Models:** For the sorting_agent.py example, ensure you have a vision-capable model like "gemma-3-4b-it" loaded in LM Studio.
+*   **Image Files:** For the sorting_agent.py example, prepare a 'source' folder with various image files (.png, .jpg, .jpeg, etc.) for processing.
 
 ## Example Scripts
 
@@ -127,9 +126,11 @@ anti_nuclear_chat.add_assistant_response(anti_nuclear_response)
 
 ### 4. `sorting_agent.py`
 
-This script demonstrates how to use vision capabilities to analyze and sort images into different categories (holidays, cars, and others) based on their content.
+This script demonstrates how to create an agent that sorts images into different folders based on their content using the LM Studio SDK and vision capabilities. It processes images from a source folder and automatically categorizes them into different destination folders.
 
 **How to Run:**
+
+Before running this script, make sure you have a 'source' folder populated with images (e.g., `.png`, `.jpg`, `.jpeg`).
 
 ```bash
 python sorting_agent.py
@@ -137,19 +138,36 @@ python sorting_agent.py
 
 **Key Features:**
 
-*   Uses the Microsoft Florence-2 model to generate detailed captions for images:
+*   Uses the LM Studio SDK's image handling API to process visual content:
 
 ```python
-model = AutoModelForCausalLM.from_pretrained(
-    "microsoft/Florence-2-large", 
-    trust_remote_code=True,
-    torch_dtype=dtype
-)
+def get_image_description(image_name: str) -> str:
+    source_path = os.path.join(source_folder, image_name)
+    image_handle = lms.prepare_image(source_path)
+    chat = lms.Chat()
+    chat.add_user_message("describe the image in 3 sentences", images=[image_handle])
+    prediction = image_model.respond(chat)
+    return prediction
 ```
 
-*   Leverages the `act` function to create an intelligent agent that processes images:
+*   Demonstrates how to properly prepare images for multimodal LLM processing using `lms.prepare_image()`, a key API function for passing images as input to models
+  
+*   Uses multimodal capabilities to analyze image content:
 
 ```python
+model = lms.llm("gemma-3-4b-it")
+client = lms.get_default_client()
+image_model = client.llm.load_new_instance("gemma-3-4b-it")
+```
+
+*   Orchestrates a workflow with `act()` function to automate image classification and sorting:
+
+```python
+prompt = """organize images into folders based on their categories (holidays, vehicles, animals, other)
+do not invent names for images, use the existing ones provided by the tool list_images_to_process
+before calling a tool, explain your thinking.
+at the end of the process, give an evaluation about each tools used."""
+
 result = model.act(
     prompt,
     tools,
@@ -157,24 +175,6 @@ result = model.act(
 )
 ```
 
-*   Implements file organization tools to sort images into appropriate folders based on content analysis:
+*   Includes self-assessment capabilities where the agent evaluates the effectiveness of each tool it used during the sorting process
 
-```python
-def move_image_to_holidays(image_name: str) -> str:
-    """Moves an image to the 'vacances' folder."""
-    # Implementation details...
-```
-
-*   Demonstrates practical application of AI for content organization and classification tasks.
-
-**Note:** This script requires the Florence-2-large model for image captioning. Make sure you have sufficient GPU resources if using CUDA acceleration.
-
-## Troubleshooting
-
-*   **Model Initialization Errors:** Ensure that LM Studio is running and that the specified model is loaded.
-*   **Embedding Model Errors:** If you encounter errors related to the embedding model, make sure you have installed one.
-*   **Performance Issues:** Larger models may require more resources. Adjust model settings in LM Studio if needed.
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
+**Note:** This script requires a vision-capable LLM model, such as "gemma-3-4b-it" or equivalent. Make sure you have a suitable model loaded in LM Studio before running this example.
